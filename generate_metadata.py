@@ -31,10 +31,10 @@ def generate_metadata(xlsx_file, videos_folder):
             logging.info(f"Adding new video: {video_filename}")
             ws.append([video_filename])
             
-    # Generate descriptions and keywords
+    # Generate descriptions, keywords, and categories
     for row, cell in enumerate(ws["B"]):
         if cell.value is None:
-            # Use OpenAI API to generate description
+            # Use OpenAI API to generate description based on filename
             prompt = f"Describe a video titled '{ws.cell(row=row+1, column=1).value}' in 200 characters using at least 5 words"        
             try:
                 response = openai.Completion.create(engine="text-davinci-002", prompt=prompt, max_tokens=200)
@@ -51,17 +51,15 @@ def generate_metadata(xlsx_file, videos_folder):
             ws.cell(row=row+1, column=2).value = desc
             logging.info(f"Added description for {ws.cell(row=row+1, column=1).value}")
 
-    for row, cell in enumerate(ws["C"]):
-        if cell.value is None:
-            # Use OpenAI API to generate keywords
-            prompt = f"List 8-49 unique keywords for the video titled '{ws.cell(row=row+1, column=1).value}'"
+            # Use OpenAI API to generate keywords based on description
+            keywords_prompt = f"Based on the description: '{desc}', what could be 8-49 unique keywords for the video?"
             try:
-                response = openai.Completion.create(engine="text-davinci-002", prompt=prompt, max_tokens=150)
+                keywords_response = openai.Completion.create(engine="text-davinci-002", prompt=keywords_prompt, max_tokens=150)
             except Exception as e:
                 logging.error(f"OpenAI API call failed for keywords: {e}")
                 continue
-            
-            keywords = response.choices[0].text.strip().split(",")
+
+            keywords = keywords_response.choices[0].text.strip().split(",")
 
             # Remove duplicate keywords for this video
             keywords = list(dict.fromkeys(keywords))
@@ -72,6 +70,18 @@ def generate_metadata(xlsx_file, videos_folder):
 
             ws.cell(row=row+1, column=3).value = ",".join(keywords)
             logging.info(f"Added {len(keywords)} keywords for {ws.cell(row=row+1, column=1).value}")
+
+            # Use OpenAI API to generate category based on description
+            category_prompt = f"Based on the description: '{desc}', what could be a suitable category for the video?"
+            try:
+                category_response = openai.Completion.create(engine="text-davinci-002", prompt=category_prompt, max_tokens=10)
+            except Exception as e:
+                logging.error(f"OpenAI API call failed for category: {e}")
+                continue
+
+            category = category_response.choices[0].text.strip()
+            ws.cell(row=row+1, column=4).value = category
+            logging.info(f"Added category for {ws.cell(row=row+1, column=1).value}")
     
     # Save updated Excel file
     wb.save(xlsx_file)
