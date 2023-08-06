@@ -29,29 +29,34 @@ def generate_api():
         app.logger.error(f"Metadata generation failed: {e}")
         return jsonify({'error': 'Metadata generation failed'}), 500
 
-
-def generate_metadata_ui(xlsx_file, videos_folder):
+def generate_metadata_ui(xlsx_file, videos_folder, category, batch_name, editorial, editorial_text, editorial_city, editorial_state, editorial_country, editorial_date):
     if not xlsx_file or not videos_folder:
         return 'xlsx_file and videos_folder are required'
 
     try:
-        metadata_generator.generate_metadata(xlsx_file.name, videos_folder.name)
+        metadata_generator.generate_metadata(xlsx_file.name, videos_folder.name, category, batch_name, editorial, editorial_text, editorial_city, editorial_state, editorial_country, editorial_date)
         return "Metadata generated successfully!"
     except Exception as e:
         return str(e)
-
 
 gr.Interface(
     fn=generate_metadata_ui,
     inputs=[
         gr.inputs.File(label="Excel File"),
-        gr.inputs.Directory(label="Videos Folder")
+        gr.inputs.Directory(label="Videos Folder"),
+        gr.inputs.Textbox(label="Category"),
+        gr.inputs.Textbox(label="Batch Name"),
+        gr.inputs.Textbox(label="Editorial"),
+        gr.inputs.Textbox(label="Editorial Text"),
+        gr.inputs.Textbox(label="Editorial City"),
+        gr.inputs.Textbox(label="Editorial State"),
+        gr.inputs.Textbox(label="Editorial Country"),
+        gr.inputs.Textbox(label="Editorial Date")
     ],
     outputs="text",
     server_name="localhost",
     server_port=5000
 ).launch()
-
 
 if __name__ == '__main__':
     app.run(port=5000)
